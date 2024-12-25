@@ -1,0 +1,85 @@
+Phân tích sự ảnh hưởng của thời tiết đến lưu lượng giao thông                                                  
+SELECT weather_main, AVG(traffic_volume) AS avg_traffic_volume
+FROM TrafficData
+GROUP BY weather_main
+ORDER BY avg_traffic_volume DESC;                                                                    
+Sự thay đổi lưu lượng giao thông theo mức độ mây che phủ      
+SELECT clouds_all, AVG(traffic_volume) AS avg_traffic_volume
+FROM TrafficData
+GROUP BY clouds_all
+ORDER BY clouds_all ASC;
+Lưu lượng giao thông trung bình theo khoảng nhiệt độ
+SELECT CASE 
+            WHEN temp < 285 THEN 'Cold'
+            WHEN temp BETWEEN 285 AND 295 THEN 'Mild'
+            ELSE 'Hot'
+        END AS temp_range,
+        AVG(traffic_volume) AS avg_traffic_volume
+FROM TrafficData
+GROUP BY temp_range
+ORDER BY avg_traffic_volume DESC;
+Thống kê lưu lượng giao thông trung bình theo từng giờ trong ngày
+SELECT HOUR(date_time) AS hour_of_day, AVG(traffic_volume) AS avg_traffic_volume
+FROM TrafficData
+GROUP BY HOUR(date_time)
+ORDER BY hour_of_day;
+So sánh lưu lượng giao thông giữa ngày thường và ngày lễ
+SELECT 
+    CASE WHEN holiday = 'None' THEN 'Weekday' ELSE 'Holiday' END AS day_type,
+    AVG(traffic_volume) AS avg_traffic_volume
+FROM TrafficData
+GROUP BY CASE WHEN holiday = 'None' THEN 'Weekday' ELSE 'Holiday' END
+ORDER BY avg_traffic_volume DESC;
+Phân phối lưu lượng giao thông:
+WITH traffic_ranges AS (
+  SELECT 
+    CASE 
+      WHEN traffic_vol < 3000 THEN 'Below 3000'
+      WHEN traffic_vol BETWEEN 3000 AND 6000 THEN '3000-6000'
+      ELSE 'Above 6000'
+    END AS traffic_range
+  FROM Metro_Interstate_Traffic_Volume
+)
+SELECT traffic_range, COUNT(*) AS count
+FROM traffic_ranges
+GROUP BY traffic_range;
+PHÂN TÍCH XU HƯỚNG HÀNG NĂM VỀ LƯU LƯỢNG GIAO THÔNG TRONG CÁC ĐIỀU KIỆN THỜI TIẾT CỤ THỂ
+SELECT
+EXTRACT(YEAR FROM date_time) AS year, Weather_main, 
+CASE
+WHEN snow_1h > 5 THEN 'Heavy Snow'
+WHEN snow_1h > 0 THEN 'Light Snow'
+WHEN rain_1h > 5 THEN 'Heavy Rain'
+WHEN rain_1h > 0 THEN 'Light Rain'
+ELSE 'Clear Weather'
+END AS weather_condition, 
+AVG(traffic_volume) AS avg_traffic, 
+COUNT(*) AS record_count
+FROM Traffic_data
+GROUP BY year, weather_main, weather_condition
+HAVING COUNT(*) > 10  -- Loại bỏ điều kiện hiếm gặp (ít hơn 10 bản ghi)
+ORDER BY year, avg_traffic DESC; 
+XU HƯỚNG LƯU LƯỢNG GIAO THÔNG THEO MÙA
+SELECT EXTRACT(MONTH FROM date_time) AS month, AVG(traffic_volume) AS avg_traffic
+FROM traffic_data
+GROUP BY month
+ORDER BY month;
+PHÂN TÍCH KẾT HỢP GIỮA NGÀY LỄ, GIỜ TRONG NGÀY, THỜI TIẾT, VÀ MƯA ĐỂ XEM TÁC ĐỘNG ĐẾN LƯU LƯỢNG GIAO THÔNG
+SELECT holiday, 
+EXTRACT(HOUR FROM date_time) AS hour, 
+weather_main,
+CASE
+WHEN rain_1h > 0 THEN 'Rainy'
+ELSE 'No Rain'
+END AS rain_status, 
+AVG(traffic_volume) AS avg_traffic
+FROM traffic_data
+GROUP BY holiday, hour, weather_main, rain_status
+ORDER BY holiday, hour, avg_traffic DESC;
+TÁC ĐỘNG KẾT HỢP CỦA NGÀY LỄ VÀ THỜI GIAN TRONG NGÀY
+SELECT holiday,
+EXTRACT(HOUR FROM date_time)
+AS hour, AVG(traffic_volume) AS avg_traffic
+FROM traffic_data
+GROUP BY holiday, hour
+ORDER BY holiday, hour;                                           
